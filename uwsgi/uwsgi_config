@@ -1,0 +1,27 @@
+[uwsgi]
+# setting from braden
+socket = /home/vagrant/uwsgi/socket
+chmod-socket = 666
+master = true
+processes = 10
+
+# chdir = /home/vagrant/app
+# base = /home/vagrant/app
+home = /home/vagrant/app/venv
+virtualenv = /home/vagrant/app/venv
+venv = /home/vagrant/app/venv
+pythonpath = /home/vagrant/app
+module = mysite.wsgi
+
+pidfile2 = /home/vagrant/uwsgi/pid
+daemonize = /home/vagrant/uwsgi/log
+env = DJ_SECRET_KEY=ioquw89rcquw8x9xrm09qmr9q8ru9q83m9qj
+env = DJ_DEBUG=True
+env = DJ_DB_ENGINE=django.db.backends.mysql
+env = DJ_DB_NAME=swndb
+env = DJ_DB_USER=root
+env = DJ_DB_PASSWORD=mypassword
+env = DJ_DB_HOST=127.0.0.1
+env = DJ_DB_PORT=3306
+env = DJ_STATIC_ROOT=/home/vagrant/app/mysite/static
+env = DJ_ABSOLUTE_DATA_PATH=/usr/share/nginx/data
