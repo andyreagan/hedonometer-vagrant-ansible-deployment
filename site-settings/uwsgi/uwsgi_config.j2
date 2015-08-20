@@ -1,0 +1,28 @@
+[uwsgi]
+# setting from braden
+socket = /home/{{ ansible_ssh_user }}/uwsgi/socket
+chmod-socket = 666
+master = true
+processes = 10
+
+# chdir = /home/{{ ansible_ssh_user }}/app
+# base = /home/{{ ansible_ssh_user }}/app
+home = /home/{{ ansible_ssh_user }}/app/venv
+virtualenv = /home/{{ ansible_ssh_user }}/app/venv
+venv = /home/{{ ansible_ssh_user }}/app/venv
+pythonpath = /home/{{ ansible_ssh_user }}/app
+module = mysite.wsgi
+
+pidfile2 = /home/{{ ansible_ssh_user }}/uwsgi/pid
+daemonize = /home/{{ ansible_ssh_user }}/uwsgi/log
+
+env = DJ_SECRET_KEY={{ DJ_SECRET_KEY }}
+env = DJ_DEBUG={{ DJ_DEBUG }}
+env = DJ_DB_ENGINE={{ DJ_DB_ENGINE }}
+env = DJ_DB_NAME={{ DJ_DB_NAME }}
+env = DJ_DB_USER={{ DJ_DB_USER }}
+env = DJ_DB_PASSWORD={{ DJ_DB_PASSWORD }} 
+env = DJ_DB_HOST={{ DJ_DB_HOST }} 
+env = DJ_DB_PORT={{ DJ_DB_PORT }} 
+env = DJ_STATIC_ROOT={{ DJ_STATIC_ROOT }}
+env = DJ_ABSOLUTE_DATA_PATH={{ DJ_ABSOLUTE_DATA_PATH }}

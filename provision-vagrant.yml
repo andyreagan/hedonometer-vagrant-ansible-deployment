@@ -1,0 +1,125 @@
+---
+- hosts: all
+  # roles seem awesome, but they're complicated and more than I need right now
+  # roles:
+  #    - common
+  # basic variables
+  vars:
+    DJ_SECRET_KEY: "3*qr%3v27!)_cfml*uffm3n9glfdy%16!#4wm5@8t)rc@do_z^"
+    DJ_DEBUG: TRUE
+    DJ_DB_ENGINE: django.db.backends.mysql
+    DJ_DB_NAME: swndb
+    DJ_DB_USER: root
+    DJ_DB_PASSWORD: mypassword
+    DJ_DB_HOST: 127.0.0.1
+    DJ_DB_PORT: 3306
+    DJ_STATIC_ROOT: "/home/{{ ansible_ssh_user }}/app/mysite/static"
+    DJ_ABSOLUTE_DATA_PATH: /usr/share/nginx/data
+  # set these things in the environment
+  environment:
+    DJ_SECRET_KEY: "{{ DJ_SECRET_KEY }}"
+    DJ_DEBUG: "{{ DJ_DEBUG }}"
+    DJ_DB_ENGINE: "{{ DJ_DB_ENGINE }}"
+    DJ_DB_NAME: "{{ DJ_DB_NAME }}"
+    DJ_DB_USER: "{{ DJ_DB_USER }}"
+    DJ_DB_PASSWORD: "{{ DJ_DB_PASSWORD }}" 
+    DJ_DB_HOST: "{{ DJ_DB_HOST }}" 
+    DJ_DB_PORT: "{{ DJ_DB_PORT }}" 
+    DJ_STATIC_ROOT: "{{ DJ_STATIC_ROOT }}"
+    DJ_ABSOLUTE_DATA_PATH: "{{ DJ_ABSOLUTE_DATA_PATH }}"
+  tasks:
+    - name: update apt-get
+      apt: update_cache=yes
+      become: yes
+      become_method: sudo
+    - name: check all dependencies
+      apt: pkg="{{ item }}" state=latest
+      with_items:
+        - nginx
+        - python-pip
+        - build-essential
+        - python
+        - python-dev
+        - libmysqlclient-dev
+        - git
+        - emacs
+      become: yes
+      become_method: sudo
+    - name: global uwsgi install    
+      pip: name={{ item }} state=latest
+      with_items:
+        - uwsgi
+        - virtualenv
+      become: yes
+      become_method: sudo
+    - name: check nginx running
+      service: name=nginx state=started
+    - name: grab the git repository
+      git: repo=https://github.com/andyreagan/hedonometer.git
+           dest="/home/{{ ansible_ssh_user }}/app"
+    # - name: set git credentials
+    #   command: git config --global user.email "andy@andyreagan.com"; git config --global user.email "Andy Reagan";
+    - name: build development environment
+      command: virtualenv venv --python=python2.7 chdir="/home/{{ ansible_ssh_user }}/app/"
+    - name: install requirements
+      pip: requirements=requirements.txt chdir="/home/{{ ansible_ssh_user }}/app/" virtualenv="/home/{{ ansible_ssh_user}}/app/venv"
+    - name: collect static files
+      django_manage: virtualenv="/home/{{ ansible_ssh_user}}/app/venv" app_path="/home/{{ ansible_ssh_user }}/app/" command=collectstatic
+    - name: create tables
+      django_manage: virtualenv="/home/{{ ansible_ssh_user}}/app/venv" app_path="/home/{{ ansible_ssh_user }}/app/" command=syncdb
+    - name: migrate database
+      django_manage: virtualenv="/home/{{ ansible_ssh_user}}/app/venv" app_path="/home/{{ ansible_ssh_user }}/app/" command=migrate apps={{ item }}
+      with_items:
+        - hedonometer
+        - twython_django
+        - tastypie
+      notify:
+        - restart uwsgi
+    - name: make uwsgi directory for app config file
+      command: mkdir "/home/{{ ansible_ssh_user}}/uwsgi" creates="/home/{{ ansible_ssh_user}}/uwsgi"
+    # there is a "copy" module too, but for three files just use command
+    - name: render uwsgi config
+      template: src=site-settings/uwsgi/uwsgi_config.j2 dest="/home/{{ ansible_ssh_user}}/uwsgi/uwsgi_config" mode=0644
+    - name: render uwsgi params
+      template: src=site-settings/uwsgi/uwsgi_params.j2 dest="/home/{{ ansible_ssh_user}}/uwsgi/uwsgi_params" mode=0644
+    - name: save environment vars in file on server
+      template: src=site-settings/.env.j2 dest="/home/{{ ansible_ssh_user}}/.env" mode=0644
+      # set everything up for uwsgi to run in emporer mode
+    # - name: make uswgi directory for emporer mode
+    #   command: mkdir /etc/uwsgi creates=/etc/uwsgi
+    #   become: yes
+    #   become_method: sudo
+    # - name: uwsgi init service registration
+    #   command: cp "/{{ ansible_ssh_user}}/uwsgi.conf" /etc/init/ creates=/etc/init/uwsgi.conf
+    #   become: yes
+    #   become_method: sudo
+    # - name: link uswgi file into place
+    #   file: src="/home/{{ ansible_ssh_user}}/uwsgi/uwsgi_config" dest=/etc/uwsgi/app state=link
+
+    # - block:
+    # blocks are with ansible v2. using verion shipped w pip
+    - name: link nginx config into place
+      file: state=link src="/home/{{ ansible_ssh_user}}/nginx.conf" dest=/etc/nginx/sites-enabled/app force=yes
+      become: yes
+      become_method: sudo
+    - name: remove default site
+      file: state=absent path=/etc/nginx/sites-enabled/default
+      become: yes
+      become_method: sudo
+    - name: render nginx config
+      template: src=site-settings/nginx.conf.j2 dest="/home/{{ ansible_ssh_user}}/nginx.conf" mode=0644
+      notify:
+        - restart nginx
+  handlers:
+    - name: restart nginx
+    # service: name=nginx state=reloaded
+      command: nginx -s reload
+      become: yes
+      become_method: sudo    
+    # - name: restart uwsgi
+    #   service: name=uwsgi state=started
+    #   become: yes
+    #   become_method: sudo
+    - name: restart uwsgi
+      command: kill $(cat "/home/{{ ansible_ssh_user}}/uwsgi/pid"); uwsgi --ini uwsgi/uwsgi_config chdir="/home/{{ ansible_ssh_user}}"
+

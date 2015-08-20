@@ -1,0 +1,56 @@
+# {{ ansible_managed }} {{ ansible_ssh_user }}
+
+# the upstream component nginx needs to connect to
+upstream uwsgi {
+    server unix:///home/{{ ansible_ssh_user }}/uwsgi/socket; # for a file socket
+}
+
+# server {
+#   listen 80;
+#   server_name www.hedonometer.org;
+#   rewrite ^(.*) http://hedonometer.org$1 permanent;
+# }
+
+# server {
+#     listen       80;
+#     server_name  www.hedonometer.org;
+#     return       301 http://hedonometer.org$request_uri;
+# }
+
+log_format compression '$remote_addr - $remote_user [$time_local] '
+                       '"$request" $status $body_bytes_sent ' 
+                       '"$http_referer" "$http_user_agent" "$gzip_ratio"';
+
+# configuration of the server
+server {
+    # the port your site will be served on
+    listen      80 default_server;
+    # the domain name it will serve for
+    # server_name hedonometer.org; # substitute your machine's IP address or FQDN
+    charset     utf-8;
+
+    # max upload size
+    client_max_body_size 75M;   # adjust to taste
+    # add_header 'Access-Control-Allow-Origin' 'http://127.0.0.1:54043';
+    add_header 'Access-Control-Allow-Origin' '*';
+
+    # rewrite  ^/(\?.*)?$  /index.html$1  permanent;
+
+    location /static {
+        autoindex on;
+        alias /home/{{ ansible_ssh_user }}/app/mysite/static; # your Django project's static files - amend as required
+    }
+
+    location /data {
+        autoindex on;
+        alias /usr/share/nginx/data; # your Django project's static files - amend as required
+    }
+
+    # Finally, send all non-media requests to the Django server.
+    location / {
+        uwsgi_pass  uwsgi;
+        include /home/{{ ansible_ssh_user }}/uwsgi/uwsgi_params; # the uwsgi_params file you installed
+    }
+
+    access_log /usr/share/nginx/nginx-access.log compression;
+}
