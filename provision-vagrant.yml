@@ -14,6 +14,8 @@
     DJ_DB_HOST: 127.0.0.1
     DJ_DB_PORT: 3306
     DJ_STATIC_ROOT: "/home/{{ ansible_ssh_user }}/app/mysite/static"
+    HEDO_APP_KEY: "JJ6m8Mf6wwd2J2zqQN3AKClRI"
+    HEDO_APP_SECRET: "qBssBf4wfUaeNUMPRY5epn8hL4t543wDf20FEjxrY0FsQmykaa"
     DJ_ABSOLUTE_DATA_PATH: /usr/share/nginx/data
   # set these things in the environment
   environment:
@@ -26,6 +28,8 @@
     DJ_DB_HOST: "{{ DJ_DB_HOST }}" 
     DJ_DB_PORT: "{{ DJ_DB_PORT }}" 
     DJ_STATIC_ROOT: "{{ DJ_STATIC_ROOT }}"
+    HEDO_APP_KEY: "{{ HEDO_APP_KEY }}"
+    HEDO_APP_SECRET: "{{ HEDO_APP_SECRET }}"
     DJ_ABSOLUTE_DATA_PATH: "{{ DJ_ABSOLUTE_DATA_PATH }}"
   tasks:
     - name: update apt-get
