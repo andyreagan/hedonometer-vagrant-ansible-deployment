@@ -124,6 +124,8 @@
     #   service: name=uwsgi state=started
     #   become: yes
     #   become_method: sudo
-    - name: restart uwsgi
-      command: kill $(cat "/home/{{ ansible_ssh_user}}/uwsgi/pid"); uwsgi --ini uwsgi/uwsgi_config chdir="/home/{{ ansible_ssh_user}}"
+    - name: kill uwsgi
+      command: kill $(cat "/home/{{ ansible_ssh_user}}/uwsgi/pid")
+    - name: start uwsgi in single mode
+      command: uwsgi --ini uwsgi/uwsgi_config chdir="/home/{{ ansible_ssh_user}}"
 
