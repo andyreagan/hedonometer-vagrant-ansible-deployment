@@ -1,4 +1,8 @@
+hedonometer-vagrant-ansible-deployment
+==
+
 This is the configuration for launching a hedonometer development server, from scratch-ish.
+See [https://github.com/andyreagan/hedonometer](https://github.com/andyreagan/hedonometer) for how this fits into the whole pipeline of Hedonometer.
 
 With vagrant and virtual box installed, just go ahead and `vagrant up` in this directory and you should see the site at `localhost:8080/index.html`, after some complaining.
 Go in and change whatever, and when satisfied, push to github, and get out of the VM and run the deploy.yml playbook from this directory.
